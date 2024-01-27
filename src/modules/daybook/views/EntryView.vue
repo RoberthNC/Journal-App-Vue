@@ -8,6 +8,13 @@
       </div>
 
       <div>
+        <input
+          ref="imageSelector"
+          type="file"
+          @change="onSelectedImage"
+          v-show="false"
+          accept="image/png, image/jpeg"
+        />
         <button
           v-if="entry.id"
           @click="onDeleteEntry"
@@ -17,7 +24,7 @@
           <i class="fa fa-trash-alt"></i>
         </button>
 
-        <button class="btn btn-primary">
+        <button class="btn btn-primary" @click="onSelectImage">
           Subir Foto
           <i class="fa fa-upload"></i>
         </button>
@@ -30,8 +37,14 @@
   </template>
 
   <Fab icon="fa-save" @on:click="saveEntry" />
-  <img
+  <!-- <img
     src="https://www.robertlandscapes.com/wp-content/uploads/2014/11/landscape-322100_1280.jpg"
+    alt="entry-picture"
+    class="img-thumbnail"
+  /> -->
+  <img
+    v-if="localImage"
+    :src="localImage"
     alt="entry-picture"
     class="img-thumbnail"
   />
@@ -47,6 +60,8 @@ export default {
   data() {
     return {
       entry: null,
+      localImage: null,
+      file: null,
     };
   },
   props: {
@@ -121,6 +136,23 @@ export default {
         this.$router.push({ name: "no-entry" });
         Swal.fire("Eliminado", "", "success");
       }
+    },
+    onSelectedImage(event) {
+      const file = event.target.files[0];
+      if (!file) {
+        this.localImage = null;
+        this.file = null;
+        return;
+      }
+      this.file = file;
+      const fr = new FileReader();
+      fr.onload = () => {
+        this.localImage = fr.result;
+      };
+      fr.readAsDataURL(file);
+    },
+    onSelectImage() {
+      this.$refs.imageSelector.click();
     },
   },
   created() {
