@@ -8,7 +8,11 @@
       </div>
 
       <div>
-        <button class="btn btn-danger mx-2">
+        <button
+          v-if="entry.id"
+          @click="onDeleteEntry"
+          class="btn btn-danger mx-2"
+        >
           Borrar
           <i class="fa fa-trash-alt"></i>
         </button>
@@ -25,7 +29,7 @@
     </div>
   </template>
 
-  <Fab icon="fa-save" />
+  <Fab icon="fa-save" @on:click="saveEntry" />
   <img
     src="https://www.robertlandscapes.com/wp-content/uploads/2014/11/landscape-322100_1280.jpg"
     alt="entry-picture"
@@ -35,8 +39,9 @@
 
 <script>
 import { defineAsyncComponent } from "vue";
-import { mapGetters } from "vuex";
+import { mapActions, mapGetters } from "vuex";
 import getDayMonthYear from "../helpers/getDayMonthYear";
+import Swal from "sweetalert2";
 
 export default {
   data() {
@@ -69,10 +74,53 @@ export default {
     },
   },
   methods: {
+    ...mapActions("journal", ["updateEntry", "createEntry", "deleteEntry"]),
     loadEntry() {
-      const entry = this.getEntryById(this.id);
-      if (!entry) return this.$router.push({ name: "no-entry" });
+      let entry;
+      if (this.id === "new") {
+        entry = {
+          text: "",
+          date: new Date().getTime(),
+        };
+      } else {
+        entry = this.getEntryById(this.id);
+        if (!entry) return this.$router.push({ name: "no-entry" });
+      }
       this.entry = entry;
+    },
+    async saveEntry() {
+      new Swal({
+        title: "Espere por favor...",
+        allowOutsideClick: false,
+      });
+      Swal.showLoading();
+      if (this.entry.id) {
+        //Journal Module Action - Update
+        await this.updateEntry(this.entry);
+      } else {
+        //Journal Module Action - Create
+        const id = await this.createEntry(this.entry);
+        this.$router.push({ name: "entry", params: { id } });
+      }
+      Swal.fire("Guardado", "Entrada registrada con éxito!", "success");
+    },
+    async onDeleteEntry() {
+      const { isConfirmed } = await Swal.fire({
+        title: "¿Está seguro?",
+        text: "Una vez borrada, no se puede recuperar",
+        showDenyButton: true,
+        confirmButtonText: "Sí, estoy seguro",
+      });
+      if (isConfirmed) {
+        new Swal({
+          title: "Espere por favor...",
+          allowOutsideClick: false,
+        });
+        Swal.showLoading();
+        await this.deleteEntry(this.entry.id);
+        this.$router.push({ name: "no-entry" });
+        Swal.fire("Eliminado", "", "success");
+      }
     },
   },
   created() {
